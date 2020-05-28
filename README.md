@@ -47,4 +47,8 @@ bet is 1.0 + 3.0 = 4.0.
 
 
 I tried using a Maven project with a jar file and Unit tests, but when I ran with java -jar, it would not wait for User Input,
-it would just close.
+it would just close. That would have been the ideal way to do it.
+
+To run, go to the out\production directory from command line and run:
+
+java -cp .;libs\* com.playsafe.roulette.RouletteGame
