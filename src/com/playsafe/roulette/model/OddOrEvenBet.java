@@ -1,5 +1,7 @@
 package com.playsafe.roulette.model;
 
+import com.playsafe.roulette.RouletteGame;
+
 import java.util.Objects;
 
 public class OddOrEvenBet extends Bet {
@@ -21,14 +23,23 @@ public class OddOrEvenBet extends Bet {
     }
 
     @Override
-    public void calculateWinnings(int generatedNumber) {
+    public void calculateWinnings(RouletteGame game, int generatedNumber) {
         boolean isGeneratedNumberOdd = (generatedNumber % 2 != 0);
 
+        Integer winningAmount = null;
         if (isGeneratedNumberOdd && isOdd()) {
-            formatWinnings(toString(), new Integer(getBetAmount()*2).toString(), "WIN");
+            winningAmount = new Integer(getBetAmount()*2);
+
+            formatWinnings(toString(), winningAmount.toString(), "WIN");
+        } else if(!isGeneratedNumberOdd && !isOdd()) {
+            winningAmount = new Integer(getBetAmount()*2);
+
+            formatWinnings(toString(), winningAmount.toString(), "WIN");
         } else {
-            formatWinnings(toString(), new Integer(0).toString(), "LOSS");
+            winningAmount = new Integer(0);
+            formatWinnings(toString(), winningAmount.toString(), "LOSS");
         }
+        game.updatePlayerStats(getPlayer(), getBetAmount(), winningAmount);
     }
 
     @Override

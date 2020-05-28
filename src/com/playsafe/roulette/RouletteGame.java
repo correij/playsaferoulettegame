@@ -1,10 +1,11 @@
 package com.playsafe.roulette;
 
 import com.playsafe.roulette.model.Bet;
-import com.playsafe.roulette.model.GameInstance;
+import com.playsafe.roulette.controller.GameInstance;
 import com.playsafe.roulette.model.NumberBet;
 import com.playsafe.roulette.model.OddOrEvenBet;
 import com.playsafe.roulette.tools.IntRandomNumberGenerator;
+import com.playsafe.roulette.tools.PrinterUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -16,13 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.*;
 
 /**
  * Creates a simple command line multiplayer version of Roulette
@@ -34,19 +29,16 @@ public class RouletteGame {
 
     private IntRandomNumberGenerator numberGenerator;
 
-    private HashSet<String> players;
+    private ConcurrentHashMap<String, String> players;
 
-    private ConcurrentLinkedQueue bets;
+    private ConcurrentLinkedQueue<Bet> bets;
 
-    public ConcurrentLinkedQueue getBets() {
+    public ConcurrentLinkedQueue<Bet> getBets() {
         return bets;
     }
 
-    public void setBets(ConcurrentLinkedQueue bets) {
-        this.bets = bets;
-    }
 
-    public RouletteGame(HashSet<String> players) {
+    public RouletteGame(ConcurrentHashMap<String, String> players) {
         this.players = players;
         numberGenerator = new IntRandomNumberGenerator(1, 36);
         bets = new ConcurrentLinkedQueue<>();
@@ -54,6 +46,37 @@ public class RouletteGame {
 
     public void addBet(Bet bet) {
         bets.add(bet);
+    }
+
+    public void updatePlayerStats(String player, Integer betAmount, Integer winningAmount) {
+        String currentStats = players.get(player);
+        String[] details = currentStats.split(",");
+
+        if (details.length == 1) {
+            //first time
+            players.computeIfPresent(player, (key, oldValue) -> player + "," + winningAmount + "," + betAmount);
+        } else {
+            players.computeIfPresent(player, (key, oldValue) -> {
+                Integer totalWinnings = Integer.parseInt(details[1]) + winningAmount;
+                Integer totalBetAmount = Integer.parseInt(details[2]) + betAmount;
+
+                return player + "," + totalWinnings + "," + totalBetAmount;
+            });
+        }
+    }
+
+    public void printTotalWinnings() {
+        RouletteGame.logger.debug("\n");
+        RouletteGame.logger.debug(PrinterUtils.appendNameSpacing("Player") + PrinterUtils.appendSpacing("Total Win") + PrinterUtils.appendSpacing("Total Bet"));
+        for(String playerStat : players.keySet()) {
+            String[] details = players.get(playerStat).split(",");
+            if (details.length == 1) {
+                RouletteGame.logger.debug(PrinterUtils.appendNameSpacing(details[0]) + PrinterUtils.appendSpacing("0") + PrinterUtils.appendSpacing("0"));
+            } else {
+                RouletteGame.logger.debug(PrinterUtils.appendNameSpacing(details[0]) + PrinterUtils.appendSpacing(details[1]) + PrinterUtils.appendSpacing(details[2]));
+            }
+        }
+        RouletteGame.logger.debug("---");
     }
 
     public void clearBets() {
@@ -67,7 +90,7 @@ public class RouletteGame {
     public static void main(String[] args) {
         Logger.getRootLogger().setLevel(Level.DEBUG);
         logger.debug("Welcome to Roulette Online Game! You have 30 seconds to place bets");
-        HashSet<String> players = readPlayersFromFile();
+        ConcurrentHashMap<String, String> players = readPlayersFromFile();
         if (players.isEmpty()) {
             logger.debug("Game Players file is empty");
             exitGame();
@@ -81,7 +104,7 @@ public class RouletteGame {
         }
     }
 
-    private static void processInput(HashSet<String> players, RouletteGame game, String input) {
+    private static void processInput(ConcurrentHashMap<String, String> players, RouletteGame game, String input) {
         if ("exit".equals(input)) {
             logger.debug("Thanks for playing Online Roulette. Come back soon!");
             exitGame();
@@ -97,7 +120,7 @@ public class RouletteGame {
         }
         String player = items[0];
 
-        if (!players.contains(player)) {
+        if (!players.containsKey(player)) {
             logger.debug("Unknown player: " + player);
             return;
         }
@@ -156,9 +179,9 @@ public class RouletteGame {
         service.scheduleAtFixedRate(instance, 30, 30, TimeUnit.SECONDS);
     }
 
-    private static HashSet readPlayersFromFile() {
+    private static ConcurrentHashMap<String, String> readPlayersFromFile() {
         Path gamePlayersFile = Paths.get("roulettegameplayers.txt");
-        HashSet<String> players = new HashSet<>();
+        ConcurrentHashMap<String, String> players = new ConcurrentHashMap<>();
 
         if (Files.notExists(gamePlayersFile, LinkOption.NOFOLLOW_LINKS)) {
             logger.debug("Game Players file " + gamePlayersFile.getFileName() + " does not exist");
@@ -169,7 +192,13 @@ public class RouletteGame {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().equals("")) {
-                    players.add(line);
+                    String[] details = line.split(",");
+                    if (details.length == 1) {
+                        // no stored stats yet
+                        players.put(details[0], details[0]);
+                    } else {
+                        players.put(details[0], line);
+                    }
                 }
             }
         } catch (IOException x) {

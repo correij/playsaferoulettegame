@@ -1,6 +1,7 @@
 package com.playsafe.roulette.model;
 
 import com.playsafe.roulette.RouletteGame;
+import com.playsafe.roulette.tools.PrinterUtils;
 
 public abstract class Bet {
     private String player;
@@ -31,44 +32,14 @@ public abstract class Bet {
         this.type = type;
     }
 
-    public static String appendNameSpacing(String value) {
-        if (value == null) {
-            return "";
-        }
-        if (value.length() > 20) {
-            return value.substring(0, 20);
-        }
-        int index = value.length();
-        while (index <= 20) {
-            value += " ";
-            index++;
-        }
-        return value;
+    public abstract void calculateWinnings(RouletteGame game, int generatedNumber);
+
+    public void formatWinnings(String bet, String winnings, String outcome) {
+        RouletteGame.logger.debug(PrinterUtils.appendNameSpacing(getPlayer())+PrinterUtils.appendSpacing(bet)+PrinterUtils.appendSpacing(outcome)+PrinterUtils.appendSpacing(winnings));
     }
 
     public static void printWinningsHeader() {
-        RouletteGame.logger.debug(appendNameSpacing("Player")+appendSpacing("Bet")+appendSpacing("Outcome")+appendSpacing("Winnings"));
+        RouletteGame.logger.debug(PrinterUtils.appendNameSpacing("Player")+PrinterUtils.appendSpacing("Bet")+PrinterUtils.appendSpacing("Outcome")+PrinterUtils.appendSpacing("Winnings"));
         RouletteGame.logger.debug("---");
     }
-
-    public static String appendSpacing(String value) {
-        if (value == null) {
-            return "";
-        }
-        if (value.length() > 10) {
-            return value.substring(0, 10);
-        }
-        int index = value.length();
-        while (index <= 10) {
-            value += " ";
-            index++;
-        }
-        return value;
-    }
-
-    public void formatWinnings(String bet, String winnings, String outcome) {
-       RouletteGame.logger.debug(appendNameSpacing(getPlayer())+appendSpacing(bet)+appendSpacing(outcome)+appendSpacing(winnings));
-    }
-
-    public abstract void calculateWinnings(int generatedNumber);
 }

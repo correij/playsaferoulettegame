@@ -1,5 +1,7 @@
 package com.playsafe.roulette.model;
 
+import com.playsafe.roulette.RouletteGame;
+
 public class NumberBet extends Bet {
     private Integer number;
 
@@ -12,12 +14,16 @@ public class NumberBet extends Bet {
     }
 
     @Override
-    public void calculateWinnings(int numberDrawn) {
+    public void calculateWinnings(RouletteGame game, int numberDrawn) {
+        Integer winningAmount = null;
         if (number == numberDrawn) {
-            formatWinnings(number.toString(), new Integer(getBetAmount()*36).toString(), "WIN");
-        } else {
-            formatWinnings(number.toString(), new Integer(0).toString(), "LOSS");
+            winningAmount = new Integer(getBetAmount()*36);
+            formatWinnings(number.toString(), winningAmount.toString(), "WIN");
+       } else {
+            winningAmount = new Integer(0);
+            formatWinnings(number.toString(), winningAmount.toString(), "LOSS");
         }
+        game.updatePlayerStats(getPlayer(), getBetAmount(), winningAmount);
     }
 
     public NumberBet(String player, Integer number, Integer betAmount) {

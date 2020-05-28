@@ -1,6 +1,8 @@
-package com.playsafe.roulette.model;
+package com.playsafe.roulette.controller;
 
 import com.playsafe.roulette.RouletteGame;
+import com.playsafe.roulette.model.Bet;
+import com.playsafe.roulette.tools.PrinterUtils;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -28,8 +30,9 @@ public class GameInstance implements Runnable {
             Bet.printWinningsHeader();
 
             for (Bet bet : bets) {
-                bet.calculateWinnings(generatedNumber);
+                bet.calculateWinnings(game, generatedNumber);
             }
+            game.printTotalWinnings();
 
             RouletteGame.logger.debug("\nPlace your new bets\n");
         }
